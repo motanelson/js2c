@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS to C Transpiler & Converter</title>
+  <style>
+    :root {
+      --bg-color: #ffffffff;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #090d16;
+      --success: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, monospace;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 24px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* Standard Button Styles */
+    .btn {
+      background-color: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 9px 18px;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      background-color: #273549;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: #04101e;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: var(--border-color);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      flex: 1;
+    }
+
+    @media (max-width: 850px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pane {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-header {
+      padding: 12px 18px;
+      background: #141f32;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .editor {
+      width: 100%;
+      flex: 1;
+      min-height: 400px;
+      background: var(--code-bg);
+      color: #e2e8f0;
+      border: none;
+      padding: 16px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+    }
+
+    .status-bar {
+      margin-top: 16px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><span>JS &rarr; C</span> Transpiler</h1>
+    <div class="toolbar">
+      <!-- Hidden file input -->
+      <input type="file" id="fileInput" accept=".js,text/javascript">
+      
+      <!-- Open File Button -->
+      <button class="btn" id="openBtn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+        </svg>
+        Open File (.js)
+      </button>
+
+      <button class="btn" id="convertBtn">Convert to C</button>
+      
+      <!-- Download Button -->
+      <button class="btn btn-primary" id="downloadBtn" disabled>
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        Download .c File
+      </button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="pane">
+      <div class="pane-header">
+        <span id="fileNameLabel">JavaScript Input (Source)</span>
+        <span>Editable</span>
+      </div>
+      <textarea class="editor" id="jsInput" placeholder="Paste JavaScript code here or click 'Open File'..." spellcheck="false"></textarea>
+    </div>
+
+    <div class="pane">
+      <div class="pane-header">
+        <span>C Output (Generated)</span>
+        <span id="cStatus">Waiting for conversion</span>
+      </div>
+      <textarea class="editor" id="cOutput" placeholder="Transpiled C code will appear here..." readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span id="statusMessage">Ready. Open a .js file or paste code directly.</span>
+    <span id="metrics">Lines: 0</span>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const openBtn = document.getElementById('openBtn');
+    const convertBtn = document.getElementById('convertBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const jsInput = document.getElementById('jsInput');
+    const cOutput = document.getElementById('cOutput');
+    const fileNameLabel = document.getElementById('fileNameLabel');
+    const statusMessage = document.getElementById('statusMessage');
+    const cStatus = document.getElementById('cStatus');
+    const metrics = document.getElementById('metrics');
+
+    let currentFileName = "output";
+
+    // Prepopulate with an example demonstrating print and message.log
+    jsInput.value = `// Sample JS Code
+message.log("Initializing program...");
+
+let count = 10;
+const rate = 4.5;
+let messageText = "Processing records";
+
+function add(a, b) {
+    return a + b;
+}
+
+print("Result: ", add(count, 5));
+message.log("Status: %s with rate: %f", messageText, rate);
+
+for (let i = 0; i < 3; i++) {
+    print("Iteration:", i);
+}
+`;
+
+    // File selection triggers
+    openBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      currentFileName = file.name.replace(/\.[^/.]+$/, "");
+      fileNameLabel.textContent = `${file.name}`;
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        jsInput.value = event.target.result;
+        statusMessage.textContent = `Loaded ${file.name}`;
+        convertJsToC();
+      };
+      reader.readAsText(file);
+    });
+
+    convertBtn.addEventListener('click', () => convertJsToC());
+
+    // Main conversion engine
+    function convertJsToC() {
+      const jsCode = jsInput.value;
+      if (!jsCode.trim()) {
+        cOutput.value = "";
+        downloadBtn.disabled = true;
+        return;
+      }
+
+      const lines = jsCode.split('\n');
+      const functionDefs = [];
+      const mainStatements = [];
+      let inFunction = false;
+      let currentFunction = [];
+      let braceDepth = 0;
+
+      for (let line of lines) {
+        let trimmed = line.trim();
+
+        // Count braces to know if we are inside a function block
+        const openBraces = (line.match(/{/g) || []).length;
+        const closeBraces = (line.match(/}/g) || []).length;
+
+        // Check if starting a function
+        if (/^function\s+([a-zA-Z0-9_$]+)\s*\((.*)\)/.test(trimmed)) {
+          inFunction = true;
+          braceDepth += (openBraces - closeBraces);
+          currentFunction.push(transformFunctionHeader(trimmed));
+          if (braceDepth === 0 && openBraces > 0) {
+            inFunction = false;
+            functionDefs.push(currentFunction.join('\n'));
+            currentFunction = [];
+          }
+          continue;
+        }
+
+        if (inFunction) {
+          braceDepth += (openBraces - closeBraces);
+          currentFunction.push(transformStatement(line));
+          if (braceDepth <= 0) {
+            inFunction = false;
+            functionDefs.push(currentFunction.join('\n'));
+            currentFunction = [];
+          }
+          continue;
+        }
+
+        // Top-level statements go into main()
+        if (trimmed.length > 0) {
+          mainStatements.push("    " + transformStatement(trimmed));
+        }
+      }
+
+      // Assemble final C file
+      const cProgram = 
+`#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+${functionDefs.length > 0 ? functionDefs.join('\n\n') + '\n\n' : ''}int main(int argc, char *argv[]) {
+${mainStatements.join('\n')}
+    return 0;
+}`;
+
+      cOutput.value = cProgram;
+      downloadBtn.disabled = false;
+      cStatus.textContent = "Conversion successful";
+      statusMessage.textContent = "Transpilation complete. Ready to download.";
+      metrics.textContent = `JS: ${lines.length} lines | C: ${cProgram.split('\n').length} lines`;
+    }
+
+    // Transform statements (variables, print/message.log calls, loops)
+    function transformStatement(statement) {
+      let res = statement;
+
+      // 1. Map `print(...)`, `message.log(...)`, and `console.log(...)` to `printf(...)`
+      res = res.replace(/(?:console\.log|message\.log|print)\s*\((.*?)\);?/g, (match, args) => {
+        return transformPrintCall(args) + ";";
+      });
+
+      // 2. Type Inference for `let`, `const`, `var`
+      // Strings: let s = "hello" -> const char* s = "hello"
+      res = res.replace(/(?:let|const|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(["'`])(.*?)\2;?/g, 'const char* $1 = "$3";');
+
+      // Integers: let x = 42
+      res = res.replace(/(?:let|const|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(-?\d+);?/g, 'int $1 = $2;');
+
+      // Floats / Doubles: let x = 3.14
+      res = res.replace(/(?:let|const|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(-?\d+\.\d+);?/g, 'double $1 = $2;');
+
+      // Booleans: let b = true / false
+      res = res.replace(/(?:let|const|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(true|false);?/g, 'bool $1 = $2;');
+
+      // Generic fallback for variable declaration
+      res = res.replace(/(?:let|var)\s+([a-zA-Z0-9_$]+);?/g, 'int $1 = 0;');
+
+      // 3. For loops: `for (let i = ...)` -> `for (int i = ...)`
+      res = res.replace(/for\s*\(\s*(?:let|var)\s+/g, 'for (int ');
+
+      return res;
+    }
+
+    // Helper to format printf arguments nicely
+    function transformPrintCall(argsContent) {
+      if (!argsContent.trim()) {
+        return 'printf("\\n")';
+      }
+
+      // Check if format specifiers are already provided
+      if (argsContent.includes('%s') || argsContent.includes('%d') || argsContent.includes('%f')) {
+        let firstComma = argsContent.indexOf(',');
+        if (firstComma !== -1) {
+          let fmt = argsContent.substring(0, firstComma).trim();
+          let rest = argsContent.substring(firstComma + 1).trim();
+          // Strip string wrapping quotes to insert newline
+          if (fmt.endsWith('"')) {
+            fmt = fmt.slice(0, -1) + '\\n"';
+          }
+          return `printf(${fmt}, ${rest})`;
+        }
+      }
+
+      // Split argument list by top-level commas
+      const rawArgs = splitArguments(argsContent);
+      const formatTokens = [];
+      const expressions = [];
+
+      for (let arg of rawArgs) {
+        arg = arg.trim();
+        if (/^["'].*["']$/.test(arg)) {
+          // Raw string literal
+          const cleanStr = arg.replace(/^["']|["']$/g, '');
+          formatTokens.push(cleanStr);
+        } else if (/^-?\d+$/.test(arg)) {
+          formatTokens.push('%d');
+          expressions.push(arg);
+        } else if (/^-?\d+\.\d+$/.test(arg)) {
+          formatTokens.push('%f');
+          expressions.push(arg);
+        } else {
+          // Default variable or expression as integer/generic
+          formatTokens.push('%d');
+          expressions.push(arg);
+        }
+      }
+
+      const formatString = formatTokens.join(' ') + '\\n';
+      if (expressions.length > 0) {
+        return `printf("${formatString}", ${expressions.join(', ')})`;
+      } else {
+        return `printf("${formatString}")`;
+      }
+    }
+
+    // Transforms `function foo(a, b)` -> `int foo(int a, int b)`
+    function transformFunctionHeader(line) {
+      return line.replace(/^function\s+([a-zA-Z0-9_$]+)\s*\((.*?)\)/, (match, name, params) => {
+        let typedParams = "";
+        if (params.trim().length > 0) {
+          typedParams = params.split(',').map(p => 'int ' + p.trim()).join(', ');
+        } else {
+          typedParams = "void";
+        }
+        return `int ${name}(${typedParams})`;
+      });
+    }
+
+    // Safely splits comma-separated arguments ignoring commas inside quotes
+    function splitArguments(str) {
+      const result = [];
+      let current = '';
+      let inQuote = false;
+      let quoteChar = '';
+
+      for (let i = 0; i < str.length; i++) {
+        const c = str[i];
+        if ((c === '"' || c === "'") && (i === 0 || str[i - 1] !== '\\')) {
+          if (!inQuote) {
+            inQuote = true;
+            quoteChar = c;
+          } else if (quoteChar === c) {
+            inQuote = false;
+          }
+        }
+        if (c === ',' && !inQuote) {
+          result.push(current);
+          current = '';
+        } else {
+          current += c;
+        }
+      }
+      if (current) result.push(current);
+      return result;
+    }
+
+    // Download generated C file
+    downloadBtn.addEventListener('click', () => {
+      const cContent = cOutput.value;
+      if (!cContent) return;
+
+      const blob = new Blob([cContent], { type: 'text/x-csrc;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${currentFileName}.c`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+
+    // Run initial conversion on page load
+    convertJsToC();
+  </script>
+</body>
+</html>
