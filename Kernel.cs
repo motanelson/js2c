@@ -125,9 +125,7 @@ namespace js2c
                 string jsCode = File.ReadAllText(inputFile, Encoding.UTF8);
                 string cCode = ConvertJsToC(jsCode);
 
-                string outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputFile));
-                if (!String.IsNullOrEmpty(outputDirectory))
-                    Directory.CreateDirectory(outputDirectory);
+                
                 try
                 {
                     File.WriteAllText(outputFile, cCode, new UTF8Encoding(false));
