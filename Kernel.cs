@@ -75,7 +75,7 @@ namespace js2c
                     Console.WriteLine();
                     Console.WriteLine("Starting conversion...");
 
-                    Program.Main(args);
+                    Programs.Main(args);
                 }
                 catch (Exception ex)
                 {
@@ -92,7 +92,7 @@ namespace js2c
 
 
     }
-    public class Program
+    public class Programs
     {
         // Main entry point:
         // JsToC.exe input.js output.c
